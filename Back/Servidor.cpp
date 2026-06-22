@@ -81,11 +81,48 @@ int main() {
     bool fugiu = false;
 
     while(zumbiInimigo.estaVivo() && !fugiu){
-        
+        cout << "\n SEU TURNO" << endl;
+        cout << "1 - Atacar" << endl;
+        cout << "2 - Ver Status" << endl;
+        cout << "3 - Fugir" << endl;
+
+        int acao;
+        cin >> acao;
+
+        if(acao == 1){
+            //turno do jogador
+            int danoDoJogador = 30;
+            cout << "\n Você atacou o " << zumbiInimigo.getTipo() << endl;
+            zumbiInimigo.receberDano(danoDoJogador);
+
+            if(!zumbiInimigo.estaVivo()){
+            cout << "\n Você derrotou o " << zumbiInimigo.getTipo() << endl;
+            break;
+        }
+
+            //turno do zumbi
+        cout << "\n TURNO DO INIMIGO" << endl;
+        zumbiInimigo.atacar();
+        personagemPrincipal->receber_dano(zumbiInimigo.getDano());
+
+        } else if (acao == 2){
+            cout << "\n SEUS STATUS " << endl;
+            personagemPrincipal->exibirStatus();
+            cout << "\n STATUS DO INIMIGO " << endl;
+            cout << zumbiInimigo.getTipo() << ": Vida = " << zumbiInimigo.getVida() << "\n";
+        } else if(acao == 3){
+            cout << "\n Você fugiu do " << zumbiInimigo.getTipo() << "!" << endl;
+            fugiu = true;
+        } else{
+            cout << "\n Ação inválida, você tropeçou e perdeu o turno de ataque!" << endl;
+            cout << " TURNO DO INIMIGO " << endl;
+            zumbiInimigo.atacar();
+            personagemPrincipal->receber_dano(zumbiInimigo.getDano());
+        }
+    
     }
 
-    personagemPrincipal->receber_dano(25);
-    personagemPrincipal->exibirStatus();
+    cout << "FIM DA SIMULAÇÂO" << endl;
 
     // 5. Limpeza de Memória
     delete personagemPrincipal;
