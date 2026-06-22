@@ -12,43 +12,41 @@
 using namespace std;
 
 int main() {
-    string nomeDigitado;
-    int escolhaClasse = 0;
+    WSADATA wsaData;
+    WSAStartup(MAKEWORD(2, 2), &wsaData);
 
-    cout << "========================================" << endl;
-    cout << "       BEM-VINDO AO RPG DE ZUMBI        " << endl;
-    cout << "========================================" << endl;
+    SOCKET serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+    sockaddr_in serverAddr;
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_addr.s_addr = INADDR_ANY;
+    serverAddr.sin_port = htons(5000);
 
-    // 1. Capturando o Nome do Usuário
-    cout << "\nDigite o nome do seu sobrevivente: ";
-    getline(cin, nomeDigitado); // Usamos getline no lugar de cin para permitir nomes compostos (ex: "Jota Silva")
+    bind(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr));
+    listen(serverSocket, 1);
 
-    // 2. Menu de Escolha de Classe
-    cout << "\nEscolha sua especializacao de sobrevivencia:" << endl;
-    cout << "1 - Atirador (Foco em armas de fogo)" << endl;
-    cout << "2 - Combate (Foco em forca bruta corporal)" << endl;
-    cout << "Sua escolha: ";
-    cin >> escolhaClasse;
+    cout << "=== BACK-END C++ LIGADO ===" << endl;
+    cout << "Aguardando conexao do Python..." << endl;
 
     // Criamos uma variável "coringa" que pode guardar qualquer tipo de Jogador
     Jogador* personagemPrincipal = nullptr;
 
-    // Instanciamos a classe correta com base no número digitado
-    if (escolhaClasse == 1) {
-        personagemPrincipal = new Atirador(nomeDigitado);
-        cout << "\nClasse Atirador selecionada!" << endl;
-        
-    } else if (escolhaClasse == 2) {
-        // personagemPrincipal = new Combate(nomeDigitado); 
-        cout << "\nClasse Combate selecionada! (Usando Atirador provisoriamente)" << endl;
-        personagemPrincipal = new Atirador(nomeDigitado); // Provisório até você criar o Combate.cpp
-        
-    } else {
-        cout << "\nOpcao invalida. Criando Atirador por padrao." << endl;
-        personagemPrincipal = new Atirador(nomeDigitado);
-    }
+    char buffer[1024] = {0};
+    recv(clientSocket, buffer, sizeof(buffer), 0);
+    
+    string mensagemRecebida(buffer);
+    cout << "[Recebido]: " << mensagemRecebida << endl;
 
-    cout << "----------------------------------------" << endl;
+    // --- AQUI ENTRA A SUA LÓGICA DE POO ---
+    // Exemplo: se recebemos "Criar_Personagem:Luigi"
+    // Atirador* p1 = new Atirador("Luigi");
+    // string hp_atual = to_string(p1->getHP());
+    
+    // Por enquanto, vamos simular a resposta do C++:
+    string resposta = "Servidor C++: Personagem criado com sucesso! HP: 100";
+    
+    // Enviando a resposta de volta para o Python
+    send(clientSocket, resposta.c_str(), resposta.length(), 0);
+    cout << "[Enviado]: " << resposta << endl;
 
     // 3. Usando o personagem criado
     personagemPrincipal->exibirStatus(); 
