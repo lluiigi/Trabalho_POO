@@ -2,7 +2,7 @@
 #define JOGADOR_HPP
 
 #include <string>
-
+#include "armas.hpp" // Inclui a classe Arma para que Jogador possa interagir com armas
 class Jogador {
 protected: // Protected para que os filhos possam acessar diretamente
     std::string nome; // nome do personagem
@@ -11,6 +11,7 @@ protected: // Protected para que os filhos possam acessar diretamente
     int hp; // pontos de vida atuais
     int hp_maximo; // pontos de vida máximos, usado para limitar a cura e o dano
     int xp; // pontos de experiência, usado para subir de nível
+    Armas* arma; // ponteiro para a arma que o jogador está usando, pode ser nulo se não estiver usando nenhuma arma
 
     void setNivel(int valor); //  garantir que o nível nunca seja negativo
     void setHP(int valor); // garantir que o HP nunca seja negativo ou maior que o máximo
@@ -24,6 +25,8 @@ public:
     // destrutor
     virtual ~Jogador();
 
+    void equiparArma(Armas* novaArma); // Método para equipar uma arma, recebe um ponteiro para a arma a ser equipada
+    void atacar(Jogador& alvo); // Método para atacar outro jogador, recebe uma referência para o jogador alvo
     // Métodos
     void receber_dano(int quantidade); //void para recebre dano
     void curar(int quantidade); // void para curar o personagem
