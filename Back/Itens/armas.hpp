@@ -1,29 +1,31 @@
+#ifndef ARMAS_HPP
+#define ARMAS_HPP
+
 #include <string>
+#include <vector>
 #include "itens.hpp"
-#ifndef armas_HPP
-#define armas_HPP
+
+using namespace std;
 
 class Arma : public Item {
 private:
-    int dano; // dano da arma, pode ser usado para calcular o dano das habilidades
-    int municao; // quantidade de munição, relevante para armas de fogo
-    std::string Tipo; // tipo da arma, como "branca" ou "de fogo"
-public :
-    Arma(std::string n, std::string desc, float p, int d, int m, std::string categoria);
-    ~Arma();
+    int dano;
+    int municao;
+    string categoria;
+    float chance_aparecer;
 
-    int getDano();
-    int getMunicao();
-    void usar(); // Método para usar a arma, pode reduzir a munição ou causar dano
-    std::string getTipo();
+public:
+    Arma(string nome, string descricao, float peso, int dano, int municao,
+         string categoria, float chance_aparecer);
+
+    int getDano() const;
+    int getMunicao() const;
+    string getCategoria() const;
+    float getChanceAparecer() const;
+    string getTipo() const { return categoria; } // Adicionando getTipo() para compatibilidade
+    void usar();
 };
 
+vector<Arma*> criarListaDeArmas();
 
-
-
-
-
-
-
-
-#endif // armas_HPP
+#endif

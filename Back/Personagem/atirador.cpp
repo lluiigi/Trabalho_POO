@@ -1,24 +1,31 @@
-#include "atirador.hpp"
 #include <iostream>
+#include "atirador.hpp"
+#include "zumbi.hpp"
 
 using namespace std;
 
-// Construtor: Repassa os dados para o construtor do Jogador e define a munição inicial
-Atirador::Atirador(string n) : Jogador( n, "Atirador") {
-    municao = 30; // Configuração específica desta classe
-    hp_maximo = 90; // Atiradores podem ter um pouco menos de HP que a média
-    hp = 90;
-}
+Atirador::Atirador(string n, string c, int niv, int hpm, int xp_inicial)
+    : Jogador(n, c, niv, hpm, xp_inicial) {}
 
-Atirador::~Atirador() {
-    cout << "[Destrutores]: Recursos especificos do Atirador limpos." << endl;
-}
+Atirador::Atirador(string n, string c) : Jogador(n, c) {}
 
-void Atirador::usarHabilidade() {
-    if (municao > 0) {
-        municao -= 3;
-        cout << nome << " disparou uma rajada! Municao restante: " << municao << endl;
-    } else {
-        cout << nome << " esta sem municao!" << endl;
+void Atirador::atacar(Zumbi* alvo) {
+    if (!estaVivo()) return;
+
+    int danoTotal = dano_base;
+
+    if (armaEquipada != nullptr) {
+        int danoArma = armaEquipada->getDano();
+
+        if (armaEquipada->getTipo() == "Fogo") {
+            danoArma = static_cast<int>(danoArma * 1.5f);
+            cout << nome << " realiza um tiro preciso com afinidade em armas de fogo! Acerto certeiro!" << endl;
+        }
+
+        danoTotal += danoArma;
+        armaEquipada->usar();
     }
+
+    cout << nome << " atacou e causou " << danoTotal << " de dano!" << endl;
+    alvo->receberDano(danoTotal);
 }

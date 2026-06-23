@@ -1,31 +1,16 @@
-#include "jogador.hpp"
 #ifndef LUTADOR_HPP
 #define LUTADOR_HPP
 
+#include "jogador.hpp"
+
+class Zumbi;
+
 class Lutador : public Jogador {
-private:
-        int dano; // dano do Lutador, pode ser usado para calcular o dano das habilidades
-        int habilidade_com_armasBrancas; // Atributo exclusivo do Lutador
-
 public:
-    Lutador(std::string n);
-    ~Lutador();
+    Lutador(std::string n, std::string c, int niv, int hpm, int xp_inicial);
+    Lutador(std::string n, std::string c);
 
-    void usarHabilidade(); // Método exclusivo da classe Lutador
+    void atacar(Zumbi* alvo) override;
 };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#endif //LUTADOR_HPP
+#endif

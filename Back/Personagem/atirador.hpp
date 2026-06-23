@@ -1,19 +1,16 @@
 #ifndef ATIRADOR_HPP
 #define ATIRADOR_HPP
 
-#include "jogador.hpp" // Precisa incluir o topo da classe mãe
+#include "jogador.hpp"
+
+class Zumbi;
 
 class Atirador : public Jogador {
-private:
-    int municao; // Atributo exclusivo do Atirador
-    int dano; // Dano base do Atirador, pode ser usado para calcular o dano das habilidades
 public:
-    // O construtor do Atirador precisa chamar o construtor do Jogador
-    Atirador(std::string n);
-    ~Atirador();
+    Atirador(std::string n, std::string c, int niv, int hpm, int xp_inicial);
+    Atirador(std::string n, std::string c);
 
-    // Método exclusivo da classe Atirador
-    void usarHabilidade(); 
+    void atacar(Zumbi* alvo) override;
 };
 
-#endif // ATIRADOR_HPP
+#endif

@@ -3,26 +3,43 @@
 
 #include <string>
 
-// classe base
-class Zumbi{
-
-    private:
-        std::string tipo; // Zumbi pode ser 'lento', 'corredor' ou 'tanque'
+// --- CLASSE BASE ---
+class Zumbi {
+    protected: 
+        std::string tipo; 
         int vida;
         int dano;
+        int xp_recompensa; // <-- O XP está aqui
 
     public:
-        Zumbi(std::string tipo, int vida, int dano); //Construtor de Zumbi
+        // 1. RESOLVIDO: Agora o construtor pede as 4 coisas!
+        Zumbi(std::string tipo, int vida, int dano, int xp_recompensa); 
 
-        //Principais ações
-        void receberDano(int danoRecebido);
-        void atacar(); // pode servir futuramente para a classe Jogador
+        void receberDano(int danoRecebido); 
+        virtual void atacar(); 
         bool estaVivo();
 
-        //Getters pra acessar recursos pivados
+        // Getters
         std::string getTipo() const;
         int getVida() const;
         int getDano() const;
+        int getXpRecompensa() const; // <-- O Getter do XP está aqui
+};
+
+// --- CLASSES FILHAS ---
+class ZumbiNormal : public Zumbi {
+public:
+    ZumbiNormal();
+};
+
+class ZumbiTanque : public Zumbi {
+public:
+    ZumbiTanque();
+};
+
+class ZumbiRapido : public Zumbi {
+public:
+    ZumbiRapido();
 };
 
 #endif
