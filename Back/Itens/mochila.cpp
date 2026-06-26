@@ -28,3 +28,23 @@ void Mochila::exibirItens() {
         std::cout << i + 1 << ". " << itens[i]->getNome() << std::endl;
     }
 }
+
+Item* Mochila::obterItem(std::string nomeItem) {
+    for (size_t i = 0; i < itens.size(); i++) {
+        if (itens[i]->getNome() == nomeItem) {
+            return itens[i];
+        }
+    }
+    return nullptr; // Retorna nulo se não achar
+}
+
+// Remove o item da mochila e do vetor
+bool Mochila::removerItem(std::string nomeItem) {
+    for (auto it = itens.begin(); it != itens.end(); ++it) {
+        if ((*it)->getNome() == nomeItem) {
+            itens.erase(it);
+            return true;
+        }
+    }
+    return false;
+}

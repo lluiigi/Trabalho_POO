@@ -32,8 +32,8 @@
 #include "../Personagem/zumbi.hpp"
 #include "../Itens/armas.hpp"
 #include "../Itens/alimento.hpp"
-// [CORREÇÃO] Ajustei o caminho do include para bater com a sua pasta Combate
 #include "../Combate/combate.hpp"
+#include "../fabricas.hpp"
 
 #include <string>
 #include <vector>
@@ -143,59 +143,41 @@ std::string explorarMapa(Jogador* j, int clientSocket)
         return "EXPLORAR:ZUMBI:" + nomeZumbi;
     }
 
-    // ==============================================================
     //  CASO C — Baú (15 %)    rolagem: 85–99
     // ==============================================================
     {
-        std::vector<ItemBau> tabela = tabelaItens();
-        int        idx  = rand() % static_cast<int>(tabela.size());
-        ItemBau&   item = tabela[idx];
+        // Sub-sorteio: 50% de chance de achar um Item (Arma/Comida) e 50% de chance de achar Munição
+        int chanceMunicao = rand() % 2; 
 
-        // Protocolo → Python recebe "BAU_CONTEUDO:<nome>"
-        std::string resp = "BAU_CONTEUDO:" + item.nome;
-        enviarMensagem(clientSocket, resp);
+        if (chanceMunicao == 0) {
+            // Sorteia Munição
+            std::string resp = "BAU_CONTEUDO:Caixa de Municao";
+            enviarMensagem(clientSocket, resp);
+            
+            // Recarrega a arma que o jogador está segurando agora (se ele tiver uma)
+            j->adicionarMunicaoArmaEquipada(10); 
+            return resp;
+        } 
+        else {
+            // Sorteia Arma ou Alimento da tabela existente
+            std::vector<ItemBau> tabela = tabelaItens();
+            int        idx  = rand() % static_cast<int>(tabela.size());
+            ItemBau&   item = tabela[idx];
 
-        // Cria o objeto concreto e entrega à mochila do jogador
-        // via pegarItem() — método público de Jogador.
-        //
-        // ⚠️  Ajuste os construtores se Arma ou Alimento pedirem
-        //      parâmetros diferentes no seu projeto.
-        if (item.categoria == "arma") {
-            // [CORREÇÃO] Preenchi os 7 parâmetros que o seu construtor Arma exige: (nome, descricao, peso, dano, municao, categoria, chance)
-            j->pegarItem(new Arma(item.nome, "Arma achada no chao", 1.0f, item.valorNumerico, 12, item.tipoArma, 1.0f));
-        } else {
-            // [CORREÇÃO] Preenchi os 4 parâmetros que o seu construtor Alimento exige: (nome, descricao, peso, cura)
-            j->pegarItem(new Alimento(item.nome, "Suprimento de sobrevivencia", 0.5f, item.valorNumerico));
+            // Protocolo → Python recebe "BAU_CONTEUDO:<nome>"
+            std::string resp = "BAU_CONTEUDO:" + item.nome;
+            enviarMensagem(clientSocket, resp);
+
+           if (item.categoria == "arma") {
+                // Pede a arma para a fábrica
+                j->pegarItem(ItemFactory::criar_arma(item.nome));
+            } else {
+                // Pede o alimento para a fábrica
+                j->pegarItem(ItemFactory::criar_alimento(item.nome));
+            }
+
+            return resp;
         }
-
-        return resp;
-    }
+    } // Fim da função explorarMapa
+  
 }
-
-// ================================================================
-//  Como integrar no Servidor.cpp:
-//
-//  Opção 1 — compilar como unidade separada (recomendado):
-//    Adicione explorarMapa.cpp ao seu g++ e inclua o protótipo:
-//      std::string explorarMapa(Jogador* j, int clientSocket);
-//
-//  Opção 2 — copiar o corpo diretamente no Servidor.cpp.
-//
-//  No loop de leitura de comandos:
-//
-//    if (comando == "ANDAR") {
-//        explorarMapa(jogadorAtual, clientSocket);
-//    }
-//
-//    if (comando.substr(0, 7) == "ATACAR:") {
-//        // Combate manual (se preferir turno explícito):
-//        ResultadoTurno rt = Combate::Iniciar_Turno(jogadorAtual, zumbiAtual);
-//        enviarMensagem(clientSocket, rt.mensagem);
-//        std::string status = Combate::verificarVitoria(jogadorAtual, zumbiAtual);
-//        if (status != "CONTINUA") {
-//            if (status == "VITORIA")
-//                jogadorAtual->ganhar_xp(zumbiAtual->getXpRecompensa());
-//            enviarMensagem(clientSocket, "COMBATE:" + status);
-//        }
-//    }
-// ================================================================

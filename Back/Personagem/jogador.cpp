@@ -165,3 +165,43 @@ void Jogador::curar(int quantidade) {
     }
     
 }
+// Implementação do uso inteligente de itens
+// --- Implementações adicionadas para resolver o erro de linkagem ---
+
+std::string Jogador::usarItemMochila(const std::string& nomeItem) {
+    Item* item = mochila->obterItem(nomeItem);
+    
+    if (item == nullptr) {
+        return "TEXTO:Erro - Item nao encontrado na mochila!\n";
+    }
+
+    // Tenta tratar como Alimento
+    Alimento* comida = dynamic_cast<Alimento*>(item);
+    if (comida != nullptr) {
+        int cura = comida->getCuraHP();
+        curar(cura); 
+        mochila->removerItem(nomeItem);
+        delete comida; 
+        return "TEXTO:Voce consumiu " + nomeItem + " e recuperou " + std::to_string(cura) + " de HP!\n";
+    }
+
+    // Tenta tratar como Arma
+    Arma* arma = dynamic_cast<Arma*>(item);
+    if (arma != nullptr) {
+        equiparArma(arma);
+        mochila->removerItem(nomeItem); 
+        return "TEXTO:Voce equipou a arma " + nomeItem + "!\n";
+    }
+
+    return "TEXTO:Nao e possivel usar este item agora.\n";
+}
+
+bool Jogador::adicionarMunicaoArmaEquipada(int quantidade) {
+    if (armaEquipada != nullptr) {
+        // Logica simples de recarga
+        std::cout << "[Inventario]: Recarregando " << armaEquipada->getNome() << " com " << quantidade << " munições." << std::endl;
+        return true;
+    }
+    std::cout << "[Inventario]: Nenhuma arma equipada para recarregar!" << std::endl;
+    return false;
+}

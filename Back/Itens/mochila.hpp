@@ -15,6 +15,8 @@ public:
 
     bool guardarItem(Item* novoItem);
     void exibirItens();
+    Item* obterItem(std::string nomeItem);
+    bool removerItem(std::string nomeItem);
 };
 
 #endif

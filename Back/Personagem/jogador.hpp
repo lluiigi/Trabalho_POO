@@ -47,7 +47,13 @@ public:
     void verMochila(); // void para ver o conteúdo da mochila, chama a função exibirItens() da classe Mochila
     void comer(Alimento* comida); // void para comer um alimento, recebe um ponteiro para o alimento que será comido, aumenta a vida do jogador de acordo com a quantidade de cura do alimento, e remove o item da mochila
     int getVida() const; // Getter para obter a vida atual do jogador
+
   
+    std::string usarItemMochila(const std::string& nomeItem);
+
+    bool adicionarMunicaoArmaEquipada(int quantidade);
+
+    void reviver();
 };
 
 #endif // JOGADOR_HPP
