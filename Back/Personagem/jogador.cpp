@@ -163,4 +163,5 @@ void Jogador::curar(int quantidade) {
     if (hp > 100) {
         hp = 100; 
     }
+    
 }
