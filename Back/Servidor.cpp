@@ -18,6 +18,8 @@ int main() {
     //inicia o uso da biblioteca winsock pra usar rede no Windows
     WSAStartup(MAKEWORD(2, 2), &wsaData);
 
+    srand(time(0)); // gerar numeros aleatórios diferentes a cada execução
+
     //cria a porta de comunicação do servidor
     // AF_INET = Protocolo IPv4 - SOCK_STREAM = Protocolo TCP (conexão estável e contínua)
     SOCKET serverSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -88,75 +90,121 @@ int main() {
     }
 
     //instancia a classe Combate
+    // Instancia a classe Combate
+// Instancia a classe Combate
     Combate gerenciadorCombate;
 
-    // Simulação rápida de jogo
-    cout << "\nUm " << zumbiInimigo.getTipo() << " apareceu!" << endl;
+    // A SEMENTE DO CAOS: Garante que os zumbis e danos sejam aleatórios
+    srand(time(0)); 
 
-    bool fugiu = false;
+    cout << "\n=== MOTOR DE JOGO INICIADO ===" << endl;
 
-    //o loop continua repetindo enquanto:
-    //1. O zumbi estiver vivo
-    //2. O jogador não fugir
-    //3. O jogador estiver vivo
-    while(zumbiInimigo.estaVivo() && !fugiu && personagemPrincipal->estaVivo()){
-        cout << "\n SEU TURNO" << endl;
-        cout << "1 - Atacar" << endl;
-        cout << "2 - Ver Status" << endl;
-        cout << "3 - Fugir" << endl;
-
-        //lê a escolha digitada
-        int acao;
-        cin >> acao;
-
-        if(acao == 1){
-            //turno do jogador
-            //se o jogador atacou, a classe Combate assume
-            //ela pega o ponteiro do jogador e o endereço de memóriado zumbiInimigo
-            //'Iniciar_Turno' vai calcular o dano do jogador e, se o zumbi sobreviver, o contra-ataque
-
-            gerenciadorCombate.Iniciar_Turno(personagemPrincipal, &zumbiInimigo);
-
-            if(!zumbiInimigo.estaVivo()){
-            //o Iniciar_Turno já imprime as mensagens de morte e de ganho de XP
+    // O servidor roda infinitamente esperando comandos
+    bool jogoRodando = true;
+    while(jogoRodando) {
+        
+        char bufferComando[1024] = {0};
+        
+        // O C++ congela aqui aguardando o clique no Pygame
+        int bytesRecebidos = recv(clientSocket, bufferComando, sizeof(bufferComando), 0);
+        
+        if (bytesRecebidos <= 0) {
+            cout << "Python desconectou. Encerrando..." << endl;
             break;
         }
 
-        } else if (acao == 2){
-            //mostra a vida atual de ambos sem avançar o turno
-            cout << "\n SEUS STATUS " << endl;
-            personagemPrincipal->exibirStatus();
-            cout << "\n STATUS DO INIMIGO " << endl;
-            cout << zumbiInimigo.getTipo() << ": Vida = " << zumbiInimigo.getVida() << "\n";
-        } 
-        else if(acao == 3){
-            //marca o 'fugiu' como true. No próximo passo do while, ele sai do loop
-            cout << "\n Você fugiu do " << zumbiInimigo.getTipo() << "!" << endl;
-            fugiu = true;
-        } 
-        else{
-            //se o jogador digitar 4 ou uma letra, ele perde o turno e o zumbi ataca de graça
-            cout << "\n Ação inválida, você tropeçou e perdeu o turno de ataque!" << endl;
-            cout << " TURNO DO INIMIGO " << endl;
-            zumbiInimigo.atacar();
-            personagemPrincipal->receber_dano(zumbiInimigo.getDano());
+        // Converte o que chegou para string
+        string comando(bufferComando);
+        cout << "[Pygame solicitou]: " << comando; // O comando já traz o '\n' do Python
+
+        // ==========================================
+        //        MÁQUINA DE ESTADOS DO JOGO
+        // ==========================================
+
+        // 1. O Python avisa que um zumbi foi encontrado no mapa
+        if (comando.find("ENCONTRO:INICIAR") != string::npos) {
+            
+            // Sorteia o zumbi
+            int sorteio = rand() % 3;
+            if(sorteio == 0) zumbiInimigo = zumbiNormal;
+            else if(sorteio == 1) zumbiInimigo = zumbiForte;
+            else zumbiInimigo = zumbiFraco;
+
+            // Envia o HP real do zumbi sorteado para a tela do Python
+            string respostaHP = "HP_ZUMBI:" + to_string(zumbiInimigo.getVida()) + "\n";
+            send(clientSocket, respostaHP.c_str(), respostaHP.length(), 0);
+
+            // Atualiza a caixa de texto
+            string respostaTexto = "TEXTO:Um " + zumbiInimigo.getTipo() + " selvagem apareceu!\n";
+            send(clientSocket, respostaTexto.c_str(), respostaTexto.length(), 0);
         }
-    
-    }
 
-    cout << "FIM DA SIMULAÇÂO" << endl;
+        // 2. O jogador clicou no botão [1] ATACAR
+        else if (comando.find("ATACAR") != string::npos) {
+            
+            // A nossa Fachada resolve a matemática do combate
+            gerenciadorCombate.Iniciar_Turno(personagemPrincipal, &zumbiInimigo);
 
-    // 5. Limpeza de Memória
-    delete personagemPrincipal;
+            // Manda o HP atualizado para as barras do Pygame diminuírem
+            string msgHP_Jog = "HP_JOGADOR:" + to_string(personagemPrincipal->getVida()) + "\n";
+            send(clientSocket, msgHP_Jog.c_str(), msgHP_Jog.length(), 0);
 
-    //fecha o canal de comunicação com o Python
-    closesocket(clientSocket);
+            string msgHP_Zum = "HP_ZUMBI:" + to_string(zumbiInimigo.getVida()) + "\n";
+            send(clientSocket, msgHP_Zum.c_str(), msgHP_Zum.length(), 0);
 
-    //fecha a porta 5000 do servidor
-    closesocket(serverSocket);
+            // Verifica o fim do combate para trocar a tela no Python
+            if (!zumbiInimigo.estaVivo()) {
+                string fim = "BATALHA_FIM:VITORIA\n";
+                send(clientSocket, fim.c_str(), fim.length(), 0);
+            } 
+            else if (!personagemPrincipal->estaVivo()) {
+                string fim = "BATALHA_FIM:DERROTA\n";
+                send(clientSocket, fim.c_str(), fim.length(), 0);
+            } 
+            else {
+                // Se ninguém morreu, a batalha continua
+                string texto = "TEXTO:Turno encerrado! O zumbi contra-atacou.\n";
+                send(clientSocket, texto.c_str(), texto.length(), 0);
+            }
+        }
+        if (comando.find("ENCONTRO:INICIAR") != string::npos) {
+            // ... (código do encontro que já está aí) ...
+        }
 
-    //desliga e limpa os recursos da biblioteca winsock
-    WSACleanup();
+        // 2. O jogador clicou no botão [1] ATACAR
+        else if (comando.find("ATACAR") != string::npos) {
+            // ... (código de ataque que já está aí) ...
+        }
+        else if (comando.find("MOCHILA:") != string::npos) {
+            
+            // 1. Extrai o nome do item (ex: "Kit Médico")
+            int pos = comando.find(":");
+            string nomeItem = comando.substr(pos + 1);
+            if (!nomeItem.empty() && nomeItem.back() == '\n') {
+                nomeItem.pop_back(); // Limpa a quebra de linha invisível
+            }
 
-    return 0;
-}
+            // 2. Cura o jogador (Vamos fixar em 20 de HP por enquanto)
+            personagemPrincipal->curar(20); 
+
+            // 3. Devolve a vida atualizada para a tela do Pygame
+            string msgHP = "HP_JOGADOR:" + to_string(personagemPrincipal->getVida()) + "\n";
+            send(clientSocket, msgHP.c_str(), msgHP.length(), 0);
+
+            // 4. Manda a ordem para o Python DELETAR o item da lista
+            string msgRemover = "REMOVER_ITEM:" + nomeItem + "\n";
+            send(clientSocket, msgRemover.c_str(), msgRemover.length(), 0);
+
+            // 5. Atualiza o chat da batalha
+            string texto = "TEXTO:Voce usou " + nomeItem + " e recuperou 20 de HP!\n";
+            send(clientSocket, texto.c_str(), texto.length(), 0);
+        }
+        // 3. O jogador clicou no botão [3] FUGIR
+        else if (comando.find("FUGIR") != string::npos) {
+            // Em um jogo real você faria o RNG da fuga aqui. 
+            // Para simplificar, vamos deixar fugir direto e voltar para o mapa.
+            string msgFuga = "BATALHA_FIM:FUGA\n";
+            send(clientSocket, msgFuga.c_str(), msgFuga.length(), 0);
+        }
+    }   
+};

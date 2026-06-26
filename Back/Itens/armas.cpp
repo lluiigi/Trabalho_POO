@@ -7,6 +7,8 @@ Arma::Arma(string nome, string descricao, float peso, int dano, int municao,stri
       categoria(categoria), // categoria da arma inicializa a categoria da arma
       chance_aparecer(chance_aparecer) {} // Inicializa os atributos específicos da classe Arma
 
+Arma::~Arma() {} // destrutor da classe Arma
+
 
 // getters da classe Arma
 

@@ -16,7 +16,7 @@ private:
 
 public:
     Arma(string nome, string descricao, float peso, int dano, int municao, string categoria, float chance_aparecer); // Construtor da classe Arma, recebe nome, descricao, peso, dano, municao, categoria e chance de aparecer
-
+    ~Arma(); // Destrutor da classe Arma
     // Getters da classe Arma
     int getDano() const;
     int getMunicao() const;

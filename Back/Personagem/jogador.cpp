@@ -67,10 +67,8 @@ void Jogador::receber_dano(int quantidade) {
     if (quantidade > 0) setHP(hp - quantidade);
 }
 
-//void para curar o jogador, recebe a quantidade de vida que será adicionada a vida do jogador
-void Jogador::curar(int quantidade) {
-    if (quantidade > 0) setHP(hp + quantidade);
-}
+
+
 
 //void para ganhar experiencia, recebe a quantidade de experiencia que será adicionada a experiencia do jogador
 void Jogador::ganhar_xp(int quantidade) {
@@ -152,4 +150,17 @@ void Jogador::comer(Alimento* comida) {
 // Getter para obter o nome do jogador
  string Jogador::getNome() {
     return nome;
+}
+
+//getter para obter a vida atual do jogador
+int Jogador::getVida() const {
+    return hp; // retorna a vida do jogador
+}
+//getter para curar o jogador, recebe a quantidade de vida que será adicionada a vida do jogador
+void Jogador::curar(int quantidade) {
+    hp += quantidade;
+    // Impede que a vida passe do limite máximo (ex: 100)
+    if (hp > 100) {
+        hp = 100; 
+    }
 }

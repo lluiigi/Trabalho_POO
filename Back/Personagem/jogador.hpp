@@ -2,9 +2,9 @@
 #define JOGADOR_HPP
 
 #include <string>
-#include "itens/armas.hpp" // chamna o arquivo armas.hpp para poder usar a classe Arma
-#include "mochila.hpp" // chama o arquivo mochila.hpp para poder usar a classe Mochila
-#include "Itens/alimento.hpp" // chama o arquivo alimento.hpp para poder usar a classe Alimento
+#include "../Itens/armas.hpp" // chamna o arquivo armas.hpp para poder usar a classe Arma
+#include "../Itens/mochila.hpp" // chama o arquivo mochila.hpp para poder usar a classe Mochila
+#include "../Itens/alimento.hpp" // chama o arquivo alimento.hpp para poder usar a classe Alimento
 
 class Zumbi;
 
@@ -46,8 +46,8 @@ public:
     void pegarItem(Item* novoItem); // void para pegar um item, recebe um ponteiro para o item que será pego, tenta guardar na mochila, se não conseguir, o item é perdido
     void verMochila(); // void para ver o conteúdo da mochila, chama a função exibirItens() da classe Mochila
     void comer(Alimento* comida); // void para comer um alimento, recebe um ponteiro para o alimento que será comido, aumenta a vida do jogador de acordo com a quantidade de cura do alimento, e remove o item da mochila
-
-   
+    int getVida() const; // Getter para obter a vida atual do jogador
+  
 };
 
 #endif // JOGADOR_HPP

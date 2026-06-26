@@ -2,9 +2,12 @@
 using namespace std;
 #include <iostream>
 #include <vector>
-Alimento::Alimento(string nome,string descricao, float peso, int recuperacao_hp) // Construtor
-    : Item(nome, descricao, peso), cura_hp(recuperacao_hp) {} // Inicializa a classe base Item e o atributo cura_hp
+//construtor da classe Alimento, recebe nome, descricao, peso e quantidade de hp que o alimento cura
+Alimento::Alimento(string nome,string descricao, float peso, int recuperacao_hp) : Item(nome, descricao, peso), cura_hp(recuperacao_hp) {
+    this->cura_hp = cura_hp;
+} // Inicializa a classe base Item e o atributo cura_hp
 
+Alimento::~Alimento() {} // destrutor da classe Alimento
 int Alimento::getCuraHP() { // Getter para obter a quantidade de HP que o alimento cura
     return cura_hp; // retorna hp que o alimento cura
 }
