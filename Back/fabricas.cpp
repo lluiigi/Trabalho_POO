@@ -5,20 +5,28 @@
 // APLICAÇÃO DO PADRÃO FACTORY - JOGADOR
 // ==========================================
 Jogador* JogadorFactory::criar_jogador(std::string classe, std::string nome) {
-    // Aqui centralizamos a lógica de criação de personagens
+    Jogador* novoJogador = nullptr;
+    
     if (classe == "Atirador" || classe == "ATIRADOR") {
-        return new Atirador(nome, "Atirador");
+        novoJogador = new Atirador(nome, "Atirador");
+        
+        // Criamos uma pistola personalizada com 5 balas em vez do padrão de 12
+        Arma* pistolaInicial = new Arma("Pistola", "Arma inicial", 0.9f, 25, 5, "Fogo", 0.0f);
+        
+        novoJogador->pegarItem(pistolaInicial); 
+        
     } else {
-        // Por padrão, cria um Jogador base ou Lutador
-        return new Jogador(nome, "Lutador");
+        // Lutador começa sem nada
+        novoJogador = new Jogador(nome, "Lutador");
     }
+    
+    return novoJogador;
 }
 
 // ==========================================
 // APLICAÇÃO DO PADRÃO FACTORY - ITENS
 // ==========================================
 Arma* ItemFactory::criar_arma(std::string tipo) {
-    // Fábrica que devolve o objeto correto baseado no nome (string)
     if (tipo == "Pistola") 
         return new Arma("Pistola", "Arma de fogo básica", 0.9f, 25, 12, "Fogo", 0.35f);
     if (tipo == "Escopeta") 
@@ -28,12 +36,10 @@ Arma* ItemFactory::criar_arma(std::string tipo) {
     if (tipo == "Taco de Beisebol") 
         return new Arma("Taco de Beisebol", "Bom alcance", 1.2f, 20, 0, "Branca", 0.30f);
     
-    // Fallback: caso o tipo não seja reconhecido, cria uma arma padrão
     return new Arma(tipo, "Arma encontrada", 1.0f, 10, 5, "Branca", 0.1f);
 }
 
 Alimento* ItemFactory::criar_alimento(std::string tipo) {
-    // Fábrica que devolve o objeto correto baseado no nome (string)
     if (tipo == "Enlatado") 
         return new Alimento("Enlatado", "Comida em conserva", 0.5f, 20);
     if (tipo == "Kit Primeiros Socorros") 
@@ -43,6 +49,5 @@ Alimento* ItemFactory::criar_alimento(std::string tipo) {
     if (tipo == "Barra de Cereal")
         return new Alimento("Barra de Cereal", "Lanche rápido", 0.1f, 15);
     
-    // Fallback: caso o tipo não seja reconhecido, cria um item padrão
     return new Alimento(tipo, "Suprimento", 0.5f, 10);
 }

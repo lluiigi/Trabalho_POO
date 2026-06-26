@@ -11,7 +11,7 @@
 //    estaVivo()        → bool
 //    [protected] classe       → std::string  (via CombateAux)
 //    [protected] dano_base    → int          (via CombateAux)
-//    [protected] armaEquipada → Arma*        (via CombateAux)
+//    [protected] armaEquipada → Arma* (via CombateAux)
 //
 //  Zumbi (zumbi.hpp):
 //    getVida() const   → int
@@ -43,18 +43,18 @@ int Combate::calcularDanoJogador(Jogador* j)
 
     int         danoBase = CombateAux::lerDanoBase(j);
     std::string classe   = CombateAux::lerClasse(j);
-    Arma*       arma     = CombateAux::lerArmaEquipada(j);
+    Arma* arma     = CombateAux::lerArmaEquipada(j);
 
     // Sem arma equipada — dano base, sem bônus
     if (arma == nullptr) {
         return danoBase;
     }
 
-    std::string tipoArma = arma->getTipo(); // "branca" ou "fogo"
+    std::string tipoArma = arma->getTipo(); // "Branca" ou "Fogo"
 
     bool aplicarBonus =
-        (classe == "Lutador"  && tipoArma == "branca") ||
-        (classe == "Atirador" && tipoArma == "fogo");
+        (classe == "Lutador"  && tipoArma == "Branca") ||
+        (classe == "Atirador" && tipoArma == "Fogo");
 
     if (aplicarBonus) {
         return static_cast<int>(danoBase * BONUS);
@@ -91,12 +91,12 @@ ResultadoTurno Combate::Iniciar_Turno(Jogador* j, Zumbi* z)
     // Verifica se o bônus foi aplicado para preencher o campo
     {
         std::string classe   = CombateAux::lerClasse(j);
-        Arma*       arma     = CombateAux::lerArmaEquipada(j);
+        Arma* arma     = CombateAux::lerArmaEquipada(j);
         std::string tipoArma = (arma != nullptr) ? arma->getTipo() : "";
 
         resultado.bonusAplicado =
-            (classe == "Lutador"  && tipoArma == "branca") ||
-            (classe == "Atirador" && tipoArma == "fogo");
+            (classe == "Lutador"  && tipoArma == "Branca") ||
+            (classe == "Atirador" && tipoArma == "Fogo");
     }
 
     z->receberDano(danoJogador);

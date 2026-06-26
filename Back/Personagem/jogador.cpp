@@ -67,9 +67,6 @@ void Jogador::receber_dano(int quantidade) {
     if (quantidade > 0) setHP(hp - quantidade);
 }
 
-
-
-
 //void para ganhar experiencia, recebe a quantidade de experiencia que será adicionada a experiencia do jogador
 void Jogador::ganhar_xp(int quantidade) {
     if (quantidade > 0) {
@@ -197,11 +194,11 @@ std::string Jogador::usarItemMochila(const std::string& nomeItem) {
 }
 
 bool Jogador::adicionarMunicaoArmaEquipada(int quantidade) {
-    if (armaEquipada != nullptr) {
-        // Logica simples de recarga
-        std::cout << "[Inventario]: Recarregando " << armaEquipada->getNome() << " com " << quantidade << " munições." << std::endl;
+    if (armaEquipada != nullptr && armaEquipada->getTipo() == "Fogo") {
+        armaEquipada->recarregar(quantidade);
+        std::cout << "[Inventario]: Recarregando " << armaEquipada->getNome() << " com " << quantidade << " municoes." << std::endl;
         return true;
     }
-    std::cout << "[Inventario]: Nenhuma arma equipada para recarregar!" << std::endl;
+    std::cout << "[Inventario]: Nenhuma arma de fogo equipada para recarregar!" << std::endl;
     return false;
 }

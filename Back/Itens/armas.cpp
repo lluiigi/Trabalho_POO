@@ -42,6 +42,11 @@ void Arma::usar() {
     }
 }
 
+// void para recarregar a arma com municao
+void Arma::recarregar(int qtd) {
+    municao += qtd;
+}
+
 //void pora exibir detalhes da arma, implementa a função virtual pura da classe base Item
 void Arma::exibirDetalhes()  {
     cout << "===== Detalhes da Arma =====" << endl;

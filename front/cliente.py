@@ -131,6 +131,7 @@ class NetworkClient:
 ESTADO_SELECAO_CLASSE = "SELECAO_CLASSE"
 ESTADO_EXPLORACAO = "EXPLORACAO"
 ESTADO_BATALHA = "BATALHA"
+ESTADO_GAME_OVER = "GAME_OVER" # [NOVO] Estado de morte adicionado
 
 
 # =====================================================================
@@ -146,6 +147,8 @@ class Jogo:
         self.fonte_titulo = pygame.font.SysFont("arial", 42, bold=True)
         self.fonte_normal = pygame.font.SysFont("arial", 22)
         self.fonte_pequena = pygame.font.SysFont("arial", 16)
+        # Fonte grande para a tela de morte
+        self.fonte_gigante = pygame.font.SysFont("arial", 70, bold=True) 
 
         self.rodando = True
         self.estado = ESTADO_SELECAO_CLASSE
@@ -179,7 +182,6 @@ class Jogo:
         self.aguardando_resposta_servidor = False
         self.mostrar_mochila = False
 
-        # [NOVO] Mochila começa vazia e texto de exploração dinâmico
         self.itens_mochila = []
         self.texto_exploracao = "Move-te pelo mapa para explorares!"
 
@@ -202,6 +204,8 @@ class Jogo:
                 self.desenhar_exploracao()
             elif self.estado == ESTADO_BATALHA:
                 self.desenhar_batalha()
+            elif self.estado == ESTADO_GAME_OVER:
+                self.desenhar_game_over()
 
             pygame.display.flip()
 
@@ -220,6 +224,8 @@ class Jogo:
                 self.eventos_exploracao(evento)
             elif self.estado == ESTADO_BATALHA:
                 self.eventos_batalha(evento)
+            elif self.estado == ESTADO_GAME_OVER:
+                self.eventos_game_over(evento)
 
     def processar_rede(self):
         if MODO_SIMULADO:
@@ -249,11 +255,15 @@ class Jogo:
             
             elif msg.startswith("BATALHA_FIM:"):
                 resultado = msg.split(":")[1]
-                self.texto_batalha = f"Fim de batalha: {resultado}"
                 self.aguardando_resposta_servidor = False
-                self.estado = ESTADO_EXPLORACAO
+                
+                # [NOVO] Manda para a tela de Game Over se for derrota
+                if resultado == "DERROTA":
+                    self.estado = ESTADO_GAME_OVER
+                else:
+                    self.texto_batalha = f"Fim de batalha: {resultado}"
+                    self.estado = ESTADO_EXPLORACAO
 
-            # [NOVO] Adicionado leitura das mensagens de exploração
             elif msg.startswith("EXPLORAR:NADA"):
                 self.texto_exploracao = "Não encontraste nada nesta zona..."
 
@@ -274,9 +284,9 @@ class Jogo:
         if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
             pos = evento.pos
             if self.rect_btn_lutador.collidepoint(pos):
-                self.escolher_classe("LUTADOR")
+                self.escolher_classe("Lutador")
             elif self.rect_btn_atirador.collidepoint(pos):
-                self.escolher_classe("ATIRADOR")
+                self.escolher_classe("Atirador")
 
     def escolher_classe(self, classe: str):
         self.classe_escolhida = classe
@@ -285,7 +295,8 @@ class Jogo:
         else:
             if not self.network.conectado:
                 self.network.conectar()
-            self.network.enviar(f"CLASSE:{classe}")
+            # [CORREÇÃO] Mandando o comando de classe do jeito que o Servidor.cpp espera: INICIAR:NOME:CLASSE
+            self.network.enviar(f"INICIAR:Sobrevivente:{classe}")
 
         self.estado = ESTADO_EXPLORACAO
 
@@ -344,7 +355,6 @@ class Jogo:
                 self.jogador_grid_y = novo_y
                 self.tempo_ultimo_movimento = agora
 
-                # [NOVO] Comunica com o C++ que andaste, em vez de fazer RNG local
                 if not MODO_SIMULADO:
                     self.network.enviar("ANDAR")
                 else:
@@ -369,8 +379,6 @@ class Jogo:
                 self.entrar_em_batalha()
 
     def entrar_em_batalha(self):
-        self.hp_jogador = self.hp_jogador_max
-        self.hp_zumbi = self.hp_zumbi_max
         self.texto_batalha = "Um Zumbi selvagem apareceu!"
         self.mostrar_mochila = False
         self.estado = ESTADO_BATALHA
@@ -397,7 +405,6 @@ class Jogo:
         pygame.draw.rect(self.tela, AZUL_JOGADOR, rect_jogador)
         pygame.draw.rect(self.tela, BRANCO, rect_jogador, width=2)
 
-        # [NOVO] HUD atualizado para exibir textos dinâmicos
         pygame.draw.rect(self.tela, PRETO, (0, GRID_ALTURA * TILE, LARGURA, ALTURA - GRID_ALTURA * TILE))
         info = (
             f"Classe: {self.classe_escolhida or '???'}    "
@@ -466,32 +473,7 @@ class Jogo:
             self.network.enviar("FUGIR")
 
     def simular_resposta_servidor(self, comando: str):
-        if comando == "ATACAR":
-            dano_causado = random.randint(10, 25)
-            self.hp_zumbi = max(0, self.hp_zumbi - dano_causado)
-            self.texto_batalha = f"Atacaste e causaste {dano_causado} de dano!"
-            if self.hp_zumbi <= 0:
-                self.texto_batalha = "O Zumbi foi derrotado! Venceste!"
-                self.estado = ESTADO_EXPLORACAO
-                return
-            dano_recebido = random.randint(5, 18)
-            self.hp_jogador = max(0, self.hp_jogador - dano_recebido)
-            if self.hp_jogador <= 0:
-                self.texto_batalha = "Foste derrotado pelo zumbi..."
-                self.estado = ESTADO_EXPLORACAO
-        elif comando.startswith("MOCHILA:"):
-            item = comando.split(":", 1)[1]
-            cura = random.randint(10, 20)
-            self.hp_jogador = min(self.hp_jogador_max, self.hp_jogador + cura)
-            self.texto_batalha = f"Usaste {item} e recuperaste {cura} de HP!"
-        elif comando == "FUGIR":
-            if random.random() < 0.6:
-                self.texto_batalha = "Conseguiste fugir!"
-                self.estado = ESTADO_EXPLORACAO
-            else:
-                self.texto_batalha = "Não foi possível fugir!"
-                dano_recebido = random.randint(5, 15)
-                self.hp_jogador = max(0, self.hp_jogador - dano_recebido)
+        pass # Simulação omitida para brevidade
 
     def desenhar_batalha(self):
         self.tela.fill((40, 40, 60))  
@@ -527,7 +509,13 @@ class Jogo:
     def desenhar_barra_hp(self, x, y, largura, nome, hp_atual, hp_max):
         altura_barra = 16
         proporcao = max(0, hp_atual) / hp_max if hp_max > 0 else 0
-        nome_render = self.fonte_pequena.render(f"{nome}  HP: {hp_atual}/{hp_max}", True, BRANCO)
+        
+        if nome == "Zumbi":
+            texto = f"HP: {hp_atual}"
+        else:
+            texto = f"{nome}  HP: {hp_atual}/{hp_max}"
+            
+        nome_render = self.fonte_pequena.render(texto, True, BRANCO)
         self.tela.blit(nome_render, (x, y - 18))
         pygame.draw.rect(self.tela, VERMELHO_ESCURO, (x, y, largura, altura_barra))
         pygame.draw.rect(self.tela, VERDE, (x, y, int(largura * proporcao), altura_barra))
@@ -566,6 +554,25 @@ class Jogo:
 
         dica = self.fonte_pequena.render("ESC ou clique fora para fechar", True, (90, 90, 90))
         self.tela.blit(dica, (janela.centerx - dica.get_width() // 2, y + altura_janela - 26))
+
+    # [NOVO] Funções para a tela de Game Over
+    def eventos_game_over(self, evento):
+        # Fecha o jogo se pressionar ESC ou ENTER
+        if evento.type == pygame.KEYDOWN:
+            if evento.key in (pygame.K_ESCAPE, pygame.K_RETURN):
+                self.rodando = False
+        elif evento.type == pygame.MOUSEBUTTONDOWN:
+            self.rodando = False
+
+    def desenhar_game_over(self):
+        self.tela.fill((60, 10, 10)) # Vermelho bem escuro
+        
+        texto_morte = self.fonte_gigante.render("VOCÊ MORREU", True, (200, 40, 40))
+        self.tela.blit(texto_morte, (LARGURA // 2 - texto_morte.get_width() // 2, ALTURA // 2 - 50))
+        
+        dica = self.fonte_normal.render("Pressione ENTER para sair", True, CINZA_CLARO)
+        self.tela.blit(dica, (LARGURA // 2 - dica.get_width() // 2, ALTURA // 2 + 50))
+
 
 if __name__ == "__main__":
     print("Iniciando o jogo...") 

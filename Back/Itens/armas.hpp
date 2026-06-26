@@ -24,6 +24,7 @@ public:
     float getChanceAparecer() const;
     string getTipo() const { return categoria; } // Adicionando getTipo() para compatibilidade
     void usar();
+    void recarregar(int qtd); // ADICIONADO: Permite adicionar municao a arma
     void exibirDetalhes() override; // Implementa a função virtual pura da classe base Item
 };
 

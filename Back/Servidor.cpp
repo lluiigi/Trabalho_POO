@@ -51,7 +51,8 @@ int main() {
     }
 
     personagemPrincipal = JogadorFactory::criar_jogador(classeJogador, nomeJogador);
-    send(clientSocket, "Servidor C++: Personagem criado!\n", 33, 0);
+    string msgCriacao = "Servidor C++: Personagem criado!\n";
+    send(clientSocket, msgCriacao.c_str(), msgCriacao.length(), 0);
     personagemPrincipal->exibirStatus();
 
     Zumbi zumbiNormal("Zumbi Normal", 100, 15, 20);
@@ -76,38 +77,54 @@ int main() {
             if(sorteio == 0) zumbiInimigo = zumbiNormal;
             else if(sorteio == 1) zumbiInimigo = zumbiForte;
             else zumbiInimigo = zumbiFraco;
-            send(clientSocket, ("HP_ZUMBI:" + to_string(zumbiInimigo.getVida()) + "\n").c_str(), 20, 0);
+            
+            // [CORREÇÃO] Agora mandamos o HP_JOGADOR real para o Python não resetar a barra após uma fuga!
+            string pacoteEncontro = 
+                "HP_ZUMBI:" + to_string(zumbiInimigo.getVida()) + "\n" +
+                "HP_JOGADOR:" + to_string(personagemPrincipal->getVida()) + "\n" +
+                "TEXTO:Um " + zumbiInimigo.getTipo() + " apareceu!\n";
+            
+            send(clientSocket, pacoteEncontro.c_str(), pacoteEncontro.length(), 0);
         }
-       else if (comando.find("ATACAR") != string::npos) {
+        else if (comando.find("ATACAR") != string::npos) {
             gerenciadorCombate.Iniciar_Turno(personagemPrincipal, &zumbiInimigo);
 
-            // Envia cada mensagem com um pequeno delay ou separadamente
-            // Certifique-se de que cada uma termina com \n
-            string msgHP_Jog = "HP_JOGADOR:" + to_string(personagemPrincipal->getVida()) + "\n";
-            string msgHP_Zum = "HP_ZUMBI:" + to_string(zumbiInimigo.getVida()) + "\n";
+            // [CORREÇÃO] Empacota o status do combate numa única mensagem
+            string pacoteCombate = 
+                "HP_JOGADOR:" + to_string(personagemPrincipal->getVida()) + "\n" +
+                "HP_ZUMBI:" + to_string(zumbiInimigo.getVida()) + "\n";
             
-            send(clientSocket, msgHP_Jog.c_str(), msgHP_Jog.length(), 0);
-            send(clientSocket, msgHP_Zum.c_str(), msgHP_Zum.length(), 0);
-
             if (!zumbiInimigo.estaVivo()) {
-                send(clientSocket, "BATALHA_FIM:VITORIA\n", 20, 0);
+                pacoteCombate += "BATALHA_FIM:VITORIA\n";
             } 
             else if (!personagemPrincipal->estaVivo()) {
-                send(clientSocket, "BATALHA_FIM:DERROTA\n", 20, 0);
+                pacoteCombate += "BATALHA_FIM:DERROTA\n";
             } 
             else {
-                send(clientSocket, "TEXTO:Turno encerrado! O zumbi contra-atacou.\n", 45, 0);
+                pacoteCombate += "TEXTO:Turno encerrado! O zumbi contra-atacou.\n";
             }
+            send(clientSocket, pacoteCombate.c_str(), pacoteCombate.length(), 0);
         }
         else if (comando.find("MOCHILA:") != string::npos) {
             int pos = comando.find(":");
             string nomeItem = comando.substr(pos + 1);
-            if (!nomeItem.empty() && nomeItem.back() == '\n') nomeItem.pop_back();
+            
+            // [CORREÇÃO] Limpa sujeiras invisíveis de rede (como \r ou espaços) que impediam o uso do item
+            nomeItem.erase(nomeItem.find_last_not_of(" \n\r\t") + 1);
 
             string textoAcao = personagemPrincipal->usarItemMochila(nomeItem);
-            send(clientSocket, ("HP_JOGADOR:" + to_string(personagemPrincipal->getVida()) + "\n").c_str(), 20, 0);
-            send(clientSocket, ("REMOVER_ITEM:" + nomeItem + "\n").c_str(), nomeItem.length() + 15, 0);
-            send(clientSocket, textoAcao.c_str(), textoAcao.length(), 0);
+            
+            string pacoteMochila = 
+                "HP_JOGADOR:" + to_string(personagemPrincipal->getVida()) + "\n" +
+                "REMOVER_ITEM:" + nomeItem + "\n" +
+                "TEXTO:" + textoAcao + "\n";
+            
+            send(clientSocket, pacoteMochila.c_str(), pacoteMochila.length(), 0);
+        }
+        // [CORREÇÃO] O bloco de FUGIR que estava faltando
+        else if (comando.find("FUGIR") != string::npos) {
+            string msgFuga = "BATALHA_FIM:FUGA\n";
+            send(clientSocket, msgFuga.c_str(), msgFuga.length(), 0);
         }
     }
 
