@@ -13,6 +13,9 @@
 
 using namespace std;
 
+// [NOVO] Protótipo da função para o servidor saber que ela existe no explorarMapa.cpp
+std::string explorarMapa(Jogador* j, int clientSocket);
+
 int main() {
     WSADATA wsaData;
     //inicia o uso da biblioteca winsock pra usar rede no Windows
@@ -121,8 +124,13 @@ int main() {
         //        MÁQUINA DE ESTADOS DO JOGO
         // ==========================================
 
+        // [NOVO] Adicionado o gatilho para chamar a função explorarMapa
+        if (comando.find("ANDAR") != string::npos || comando.find("EXPLORAR") != string::npos) {
+            explorarMapa(personagemPrincipal, clientSocket);
+        }
+
         // 1. O Python avisa que um zumbi foi encontrado no mapa
-        if (comando.find("ENCONTRO:INICIAR") != string::npos) {
+        else if (comando.find("ENCONTRO:INICIAR") != string::npos) { // [CORREÇÃO] Adicionei 'else if' aqui para conectar com a condição de cima
             
             // Sorteia o zumbi
             int sorteio = rand() % 3;
@@ -167,14 +175,9 @@ int main() {
                 send(clientSocket, texto.c_str(), texto.length(), 0);
             }
         }
-        if (comando.find("ENCONTRO:INICIAR") != string::npos) {
-            // ... (código do encontro que já está aí) ...
-        }
 
-        // 2. O jogador clicou no botão [1] ATACAR
-        else if (comando.find("ATACAR") != string::npos) {
-            // ... (código de ataque que já está aí) ...
-        }
+        // [CORREÇÃO] Apaguei as verificações duplicadas de "ENCONTRO:INICIAR" e "ATACAR" que estavam repetidas aqui no seu código original
+
         else if (comando.find("MOCHILA:") != string::npos) {
             
             // 1. Extrai o nome do item (ex: "Kit Médico")
@@ -207,4 +210,12 @@ int main() {
             send(clientSocket, msgFuga.c_str(), msgFuga.length(), 0);
         }
     }   
-};
+
+// [CORREÇÃO] Arrumei a estrutura do final do código. Você fechou com "};", mas faltava limpar o socket e usar o "return 0;"
+    delete personagemPrincipal; // Liberando memória que alocamos lá em cima
+    closesocket(clientSocket);
+    closesocket(serverSocket);
+    WSACleanup();
+
+    return 0;
+}

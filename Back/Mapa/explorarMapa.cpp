@@ -1,4 +1,4 @@
-/ ================================================================
+// ================================================================
 //  explorarMapa.cpp  –  Função de exploração com RNG
 //  RPG de Sobrevivência — backend C++ com sockets TCP
 //
@@ -24,11 +24,16 @@
 // ================================================================
 
 // --- Ajuste os caminhos conforme a estrutura de pastas do seu projeto ---
+#include <winsock2.h>
+// Linux / macOS
+// #include <sys/socket.h> 
+
 #include "../Personagem/jogador.hpp"
 #include "../Personagem/zumbi.hpp"
 #include "../Itens/armas.hpp"
 #include "../Itens/alimento.hpp"
-#include "Combate.hpp"
+// [CORREÇÃO] Ajustei o caminho do include para bater com a sua pasta Combate
+#include "../Combate/combate.hpp"
 
 #include <string>
 #include <vector>
@@ -36,10 +41,6 @@
 #include <cstdlib>    // rand()
 #include <sstream>
 
-// Linux / macOS
-#include <sys/socket.h>
-// Windows: comente a linha acima e descomente a abaixo
-// #include <winsock2.h>
 
 // ================================================================
 //  Estrutura interna para descrever um item sorteável de baú
@@ -73,13 +74,12 @@ static void enviarMensagem(int sock, const std::string& msg)
 static std::vector<ItemBau> tabelaItens()
 {
     return {
+        // [CORREÇÃO] Lista de armas reduzida para conter apenas Faca, Taco, Pistola e Escopeta
         // ---------- ARMAS ----------
-        { "Faca",           "arma",     15, "branca" },
-        { "Machado",        "arma",     25, "branca" },
-        { "Lanca Improvisada", "arma",  20, "branca" },
-        { "Pistola",        "arma",     30, "fogo"   },
-        { "Espingarda",     "arma",     45, "fogo"   },
-        { "Rifle",          "arma",     40, "fogo"   },
+        { "Faca",             "arma",     15, "Branca" },
+        { "Taco de Beisebol", "arma",     20, "Branca" },
+        { "Pistola",          "arma",     25, "Fogo"   },
+        { "Escopeta",         "arma",     45, "Fogo"   },
 
         // ---------- ALIMENTOS / CONSUMÍVEIS ----------
         { "Enlatado",              "alimento", 20, "" },
@@ -140,30 +140,6 @@ std::string explorarMapa(Jogador* j, int clientSocket)
         // Avisa o Python: combate começando
         enviarMensagem(clientSocket, "EXPLORAR:ZUMBI:" + nomeZumbi);
 
-        // ----------------------------------------------------------
-        //  Loop de combate — turno a turno até um lado morrer
-        // ----------------------------------------------------------
-        while (j->estaVivo() && zumbi->estaVivo()) {
-
-            ResultadoTurno rt = Combate::Iniciar_Turno(j, zumbi.get());
-            enviarMensagem(clientSocket, rt.mensagem);
-
-            std::string status = Combate::verificarVitoria(j, zumbi.get());
-
-            if (status == "VITORIA") {
-                // Jogador vence: concede XP da recompensa do zumbi
-                j->ganhar_xp(zumbi->getXpRecompensa());
-                enviarMensagem(clientSocket, "COMBATE:VITORIA");
-                break;
-            }
-
-            if (status == "DERROTA") {
-                enviarMensagem(clientSocket, "COMBATE:DERROTA");
-                break;
-            }
-            // "CONTINUA" → próximo turno
-        }
-
         return "EXPLORAR:ZUMBI:" + nomeZumbi;
     }
 
@@ -185,9 +161,11 @@ std::string explorarMapa(Jogador* j, int clientSocket)
         // ⚠️  Ajuste os construtores se Arma ou Alimento pedirem
         //      parâmetros diferentes no seu projeto.
         if (item.categoria == "arma") {
-            j->pegarItem(new Arma(item.nome, item.valorNumerico, item.tipoArma));
+            // [CORREÇÃO] Preenchi os 7 parâmetros que o seu construtor Arma exige: (nome, descricao, peso, dano, municao, categoria, chance)
+            j->pegarItem(new Arma(item.nome, "Arma achada no chao", 1.0f, item.valorNumerico, 12, item.tipoArma, 1.0f));
         } else {
-            j->pegarItem(new Alimento(item.nome, item.valorNumerico));
+            // [CORREÇÃO] Preenchi os 4 parâmetros que o seu construtor Alimento exige: (nome, descricao, peso, cura)
+            j->pegarItem(new Alimento(item.nome, "Suprimento de sobrevivencia", 0.5f, item.valorNumerico));
         }
 
         return resp;
