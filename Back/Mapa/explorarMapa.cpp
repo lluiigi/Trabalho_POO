@@ -1,116 +1,63 @@
-// ================================================================
-//  explorarMapa.cpp  –  Função de exploração com RNG
-//  RPG de Sobrevivência — backend C++ com sockets TCP
-//
-//  Usa EXCLUSIVAMENTE métodos que existem nos headers reais:
-//
-//  Jogador (jogador.hpp):
-//    estaVivo()        → bool
-//    pegarItem(Item*)  → void   (adiciona item à mochila interna)
-//    ganhar_xp(int)    → void   (concede XP ao jogador)
-//
-//  Zumbi (zumbi.hpp):
-//    estaVivo()        → bool
-//    getTipo() const   → std::string
-//    getXpRecompensa() → int
-//
-//  Probabilidades:
-//     0–69  (70 %)  →  Nada
-//    70–84  (15 %)  →  Zumbi  (ZumbiNormal / ZumbiTanque / ZumbiRapido — 1/3 cada)
-//    85–99  (15 %)  →  Baú   (item aleatório das listas de armas/alimentos)
-//
-//  IMPORTANTE: inicialize a semente uma única vez no main():
-//    srand(static_cast<unsigned int>(time(nullptr)));
-// ================================================================
-
 #include <winsock2.h>
-
 #include "../Personagem/jogador.hpp"
+#include "../Personagem/atirador.hpp" // Fundamental para o dynamic_cast funcionar
 #include "../Personagem/zumbi.hpp"
 #include "../Itens/armas.hpp"
 #include "../Itens/alimento.hpp"
-#include "../Combate/combate.hpp"
 #include "../fabricas.hpp"
 
 #include <string>
-#include <vector>
-#include <memory>
-#include <cstdlib>    // rand()
-#include <sstream>
+#include <cstdlib>
 
 // ================================================================
 //  Helper: envia string + '\n' pelo socket
 // ================================================================
-static void enviarMensagem(int sock, const std::string& msg)
-{
+static void enviarMensagem(int sock, const std::string& msg) {
     std::string pacote = msg + "\n";
     ::send(sock, pacote.c_str(), static_cast<int>(pacote.size()), 0);
 }
 
 // ================================================================
 //  explorarMapa
-//
-//  Parâmetros:
-//    j            – ponteiro para o jogador atual
-//    clientSocket – file descriptor do socket do cliente Python
-//
-//  Retorna a string de protocolo do evento ocorrido
-//  (útil para log no servidor).
 // ================================================================
-std::string explorarMapa(Jogador* j, int clientSocket)
-{
+std::string explorarMapa(Jogador* j, int clientSocket) {
     int rolagem = rand() % 100;   // 0–99
 
     // ==============================================================
-    //  CASO A — Nada (70 %)    rolagem: 0–69
+    //  CASO A — Nada (70 %)
     // ==============================================================
     if (rolagem < 70) {
         enviarMensagem(clientSocket, "EXPLORAR:NADA");
         return "EXPLORAR:NADA";
     }
-
+    
     // ==============================================================
-    //  CASO B — Zumbi (15 %)   rolagem: 70–84
+    //  CASO B — Zumbi (15 %)
     // ==============================================================
-    if (rolagem < 85) {
-        // Sorteia entre os 3 tipos definidos em zumbi.hpp
+    else if (rolagem < 85) {
         int tipoIdx = rand() % 3;
+        std::string nomeZumbi;
 
-        std::unique_ptr<Zumbi> zumbi;
-        std::string            nomeZumbi;
+        // Ajustado para bater com os nomes que o front-end e o servidor esperam
+        if (tipoIdx == 0) nomeZumbi = "Zumbi Normal";
+        else if (tipoIdx == 1) nomeZumbi = "Zumbi Forte";
+        else nomeZumbi = "Zumbi Fraco";
 
-        switch (tipoIdx) {
-            case 0:
-                zumbi     = std::make_unique<ZumbiNormal>();
-                nomeZumbi = "ZumbiNormal";
-                break;
-            case 1:
-                zumbi     = std::make_unique<ZumbiTanque>();
-                nomeZumbi = "ZumbiTanque";
-                break;
-            default:
-                zumbi     = std::make_unique<ZumbiRapido>();
-                nomeZumbi = "ZumbiRapido";
-                break;
-        }
-
-        // Avisa o Python: combate começando
         enviarMensagem(clientSocket, "EXPLORAR:ZUMBI:" + nomeZumbi);
-
         return "EXPLORAR:ZUMBI:" + nomeZumbi;
     }
-
+    
     // ==============================================================
-    //  CASO C — Baú (15 %)    rolagem: 85–99
+    //  CASO C — Baú (15 %)
     // ==============================================================
-    {
-        // Precisamos saber a classe do jogador. Usamos a sua própria classe auxiliar do combate!
-        std::string classeJogador = CombateAux::lerClasse(j);
+    else {
+        // Tenta converter o ponteiro base (Jogador) para a classe derivada (Atirador)
+        Atirador* atirador = dynamic_cast<Atirador*>(j);
 
-        if (classeJogador == "Atirador" || classeJogador == "ATIRADOR") {
+        // Se atirador NÃO for nulo, significa que a conversão deu certo!
+        if (atirador != nullptr) {
             // ATIRADOR: Só acha Munição ou Comida
-            int chance = rand() % 2; 
-            if (chance == 0) {
+            if (rand() % 2 == 0) {
                 std::string resp = "BAU_CONTEUDO:Caixa de Municao";
                 enviarMensagem(clientSocket, resp);
                 
@@ -125,9 +72,7 @@ std::string explorarMapa(Jogador* j, int clientSocket)
         } 
         else {
             // LUTADOR: Só acha Arma Branca ou Comida
-            int chance = rand() % 2; 
-            if (chance == 0) {
-                // Sorteia entre Faca ou Taco
+            if (rand() % 2 == 0) {
                 std::string armaSorteada = (rand() % 2 == 0) ? "Faca" : "Taco de Beisebol";
                 std::string resp = "BAU_CONTEUDO:" + armaSorteada;
                 enviarMensagem(clientSocket, resp);
@@ -141,5 +86,5 @@ std::string explorarMapa(Jogador* j, int clientSocket)
                 return resp;
             }
         }
-    } // Fim da função explorarMapa
+    } 
 }

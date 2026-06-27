@@ -190,7 +190,45 @@ class Jogo:
         self.rect_btn_fugir = pygame.Rect(540, 470, 220, 50)
         self.rect_btn_lutador = pygame.Rect(LARGURA // 2 - 260, 320, 220, 80)
         self.rect_btn_atirador = pygame.Rect(LARGURA // 2 + 40, 320, 220, 80)
+        # =====================================================================
+        # CARREGAMENTO DE IMAGENS E ANIMAÇÕES
+        # =====================================================================
+        self.uso_sprites = False
+        try:
+            # 1. Carrega os dois fundos (vamos colocar as casas por cima das nuvens)
+            ceu = pygame.image.load("assets/clouds1.png").convert()
+            self.img_ceu = pygame.transform.scale(ceu, (LARGURA, ALTURA))
+            
+            chao = pygame.image.load("assets/ground&houses.png").convert_alpha()
+            self.img_chao = pygame.transform.scale(chao, (LARGURA, ALTURA))
 
+            # 2. Carrega as animações do Zumbi (Invertendo horizontalmente para ele olhar para o jogador)
+            z1 = pygame.transform.flip(pygame.image.load("assets/zombie_cheer1.png").convert_alpha(), True, False)
+            z2 = pygame.transform.flip(pygame.image.load("assets/zombie_action1.png").convert_alpha(), True, False)
+            z3 = pygame.transform.flip(pygame.image.load("assets/zombie_action2.png").convert_alpha(), True, False)
+            self.frames_zumbi = [pygame.transform.scale(img, (150, 150)) for img in (z1, z2, z3)]
+
+            # 3. Carrega as animações do Atirador (Soldier)
+            s1 = pygame.image.load("assets/soldier_cheer1.png").convert_alpha()
+            s2 = pygame.image.load("assets/soldier_action1.png").convert_alpha()
+            s3 = pygame.image.load("assets/soldier_action2.png").convert_alpha()
+            self.frames_atirador = [pygame.transform.scale(img, (150, 150)) for img in (s1, s2, s3)]
+
+            # 4. Carrega as animações do Lutador (Adventurer)
+            a1 = pygame.image.load("assets/adventurer_cheer1.png").convert_alpha()
+            a2 = pygame.image.load("assets/adventurer_action1.png").convert_alpha()
+            a3 = pygame.image.load("assets/adventurer_action2.png").convert_alpha()
+            self.frames_lutador = [pygame.transform.scale(img, (150, 150)) for img in (a1, a2, a3)]
+
+            # 5. Controle de tempo para a animação
+            self.frame_atual = 0
+            self.tempo_ultimo_frame = 0
+            self.velocidade_animacao_ms = 300 # Troca a pose a cada 300ms
+
+            self.uso_sprites = True
+        except pygame.error as e:
+            print(f"Aviso: Erro ao carregar imagens. Verifique se a pasta se chama 'assets' e os nomes dos arquivos. Erro: {e}")
+            self.uso_sprites = False
     def rodar(self):
         while self.rodando:
             dt = self.clock.tick(FPS)
@@ -476,24 +514,56 @@ class Jogo:
         pass # Simulação omitida para brevidade
 
     def desenhar_batalha(self):
-        self.tela.fill((40, 40, 60))  
+        # Controle de tempo da animação (avança o frame de todos)
+        agora = pygame.time.get_ticks()
+        if agora - self.tempo_ultimo_frame > self.velocidade_animacao_ms:
+            self.frame_atual = (self.frame_atual + 1) % 3  # Como temos 3 poses, ele vai de 0, 1, 2 e volta pro 0
+            self.tempo_ultimo_frame = agora
 
-        zumbi_rect = pygame.Rect(LARGURA - 220, 60, 100, 100)
-        pygame.draw.rect(self.tela, ROXO_ZUMBI, zumbi_rect)
-        pygame.draw.rect(self.tela, PRETO, zumbi_rect, width=3)
+        # Desenha o Cenário (Céu primeiro, depois o chão com as casas)
+        if self.uso_sprites:
+            self.tela.blit(self.img_ceu, (0, 0))
+            self.tela.blit(self.img_chao, (0, 0))
+        else:
+            self.tela.fill((40, 40, 60))  
+
+        # Posicionamento (Ambos na mesma altura Y = 220 para pisarem no chão)
+        pos_zumbi = (LARGURA - 250, 220)
+        pos_jogador = (100, 220)
+
+        # Desenha os Sprites Animados
+        if self.uso_sprites:
+            # Desenha o Zumbi
+            self.tela.blit(self.frames_zumbi[self.frame_atual], pos_zumbi)
+            
+            # Escolhe o sprite correto baseado na classe
+            if self.classe_escolhida == "Atirador":
+                self.tela.blit(self.frames_atirador[self.frame_atual], pos_jogador)
+            else:
+                self.tela.blit(self.frames_lutador[self.frame_atual], pos_jogador)
+                
+        else:
+            # Fallback (Retângulos coloridos se a imagem der erro)
+            zumbi_rect = pygame.Rect(pos_zumbi[0], pos_zumbi[1], 100, 100)
+            pygame.draw.rect(self.tela, ROXO_ZUMBI, zumbi_rect)
+            pygame.draw.rect(self.tela, PRETO, zumbi_rect, width=3)
+
+            jogador_rect = pygame.Rect(pos_jogador[0], pos_jogador[1], 90, 90)
+            pygame.draw.rect(self.tela, AZUL_JOGADOR, jogador_rect)
+            pygame.draw.rect(self.tela, PRETO, jogador_rect, width=3)
+
+        # Barras de HP
         self.desenhar_barra_hp(LARGURA - 260, 30, 200, "Zumbi", self.hp_zumbi, self.hp_zumbi_max)
-
-        jogador_rect = pygame.Rect(120, 260, 90, 90)
-        pygame.draw.rect(self.tela, AZUL_JOGADOR, jogador_rect)
-        pygame.draw.rect(self.tela, PRETO, jogador_rect, width=3)
         self.desenhar_barra_hp(40, 380, 200, self.classe_escolhida or "Jogador", self.hp_jogador, self.hp_jogador_max)
 
+        # Caixa de texto de comandos/histórico
         caixa_texto = pygame.Rect(20, 430, LARGURA - 40, 30)
         pygame.draw.rect(self.tela, BRANCO, caixa_texto, border_radius=6)
         pygame.draw.rect(self.tela, PRETO, caixa_texto, width=2, border_radius=6)
         texto_render = self.fonte_pequena.render(self.texto_batalha, True, PRETO)
         self.tela.blit(texto_render, (caixa_texto.x + 10, caixa_texto.y + 6))
 
+        # Botões de Ação
         mouse_pos = pygame.mouse.get_pos()
         self.desenhar_botao_acao(self.rect_btn_atacar, "[1] ATACAR", VERMELHO, mouse_pos)
         self.desenhar_botao_acao(self.rect_btn_mochila, "[2] MOCHILA", (150, 110, 30), mouse_pos)
