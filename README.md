@@ -137,7 +137,8 @@ python cliente.py
 
 | Nome | GitHub |
 |---|---|
-| _Seu nome aqui_ | [@seu-usuario](#) |
+| _Luigi_ | [@luigimleite](#) |
+| _Cleito_| [@jotta._23](#) |
 
 ---
 
