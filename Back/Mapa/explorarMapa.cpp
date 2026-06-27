@@ -56,12 +56,12 @@ std::string explorarMapa(Jogador* j, int clientSocket) {
 
         // Se atirador NÃO for nulo, significa que a conversão deu certo!
         if (atirador != nullptr) {
-            // ATIRADOR: Só acha Munição ou Comida
+            // ATIRADOR: Só acha Pistola ou Comida
             if (rand() % 2 == 0) {
-                std::string resp = "BAU_CONTEUDO:Caixa de Municao";
+                std::string resp = "BAU_CONTEUDO:Pistola";
                 enviarMensagem(clientSocket, resp);
                 
-                j->adicionarMunicaoArmaEquipada(10); 
+                j->pegarItem(ItemFactory::criar_arma("Pistola")); 
                 return resp;
             } else {
                 std::string resp = "BAU_CONTEUDO:Enlatado";

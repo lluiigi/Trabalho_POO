@@ -34,6 +34,7 @@ int main() {
     Jogador* personagemPrincipal = nullptr;
     char buffer[1024] = {0};
 
+
     recv(clientSocket, buffer, sizeof(buffer), 0);
     string mensagemRecebida(buffer);
 
@@ -51,8 +52,7 @@ int main() {
     }
 
     personagemPrincipal = JogadorFactory::criar_jogador(classeJogador, nomeJogador);
-    string msgCriacao = "Servidor C++: Personagem criado!\n";
-    send(clientSocket, msgCriacao.c_str(), msgCriacao.length(), 0);
+    send(clientSocket, "Servidor C++: Personagem criado!\n", 33, 0);
     personagemPrincipal->exibirStatus();
 
     Zumbi zumbiNormal("Zumbi Normal", 100, 15, 20);
@@ -77,54 +77,47 @@ int main() {
             if(sorteio == 0) zumbiInimigo = zumbiNormal;
             else if(sorteio == 1) zumbiInimigo = zumbiForte;
             else zumbiInimigo = zumbiFraco;
-            
-            // [CORREÇÃO] Agora mandamos o HP_JOGADOR real para o Python não resetar a barra após uma fuga!
-            string pacoteEncontro = 
-                "HP_ZUMBI:" + to_string(zumbiInimigo.getVida()) + "\n" +
-                "HP_JOGADOR:" + to_string(personagemPrincipal->getVida()) + "\n" +
-                "TEXTO:Um " + zumbiInimigo.getTipo() + " apareceu!\n";
-            
-            send(clientSocket, pacoteEncontro.c_str(), pacoteEncontro.length(), 0);
+            send(clientSocket, ("HP_ZUMBI:" + to_string(zumbiInimigo.getVida()) + "\n").c_str(), 20, 0);
         }
-        else if (comando.find("ATACAR") != string::npos) {
+       else if (comando.find("ATACAR") != string::npos) {
             gerenciadorCombate.Iniciar_Turno(personagemPrincipal, &zumbiInimigo);
 
-            // [CORREÇÃO] Empacota o status do combate numa única mensagem
-            string pacoteCombate = 
-                "HP_JOGADOR:" + to_string(personagemPrincipal->getVida()) + "\n" +
-                "HP_ZUMBI:" + to_string(zumbiInimigo.getVida()) + "\n";
+            // Envia cada mensagem com um pequeno delay ou separadamente
+            // Certifique-se de que cada uma termina com \n
+            string msgHP_Jog = "HP_JOGADOR:" + to_string(personagemPrincipal->getVida()) + "\n";
+            string msgHP_Zum = "HP_ZUMBI:" + to_string(zumbiInimigo.getVida()) + "\n";
             
+            send(clientSocket, msgHP_Jog.c_str(), msgHP_Jog.length(), 0);
+            send(clientSocket, msgHP_Zum.c_str(), msgHP_Zum.length(), 0);
+
             if (!zumbiInimigo.estaVivo()) {
-                pacoteCombate += "BATALHA_FIM:VITORIA\n";
+                send(clientSocket, "BATALHA_FIM:VITORIA\n", 20, 0);
             } 
             else if (!personagemPrincipal->estaVivo()) {
-                pacoteCombate += "BATALHA_FIM:DERROTA\n";
+                send(clientSocket, "BATALHA_FIM:DERROTA\n", 20, 0);
             } 
             else {
-                pacoteCombate += "TEXTO:Turno encerrado! O zumbi contra-atacou.\n";
+                send(clientSocket, "TEXTO:Turno encerrado! O zumbi contra-atacou.\n", 45, 0);
             }
-            send(clientSocket, pacoteCombate.c_str(), pacoteCombate.length(), 0);
         }
         else if (comando.find("MOCHILA:") != string::npos) {
-            int pos = comando.find(":");
-            string nomeItem = comando.substr(pos + 1);
+            // 1. Pega o nome do item que veio do Python (ex: "Enlatado")
+            string nomeDoItem = comando.substr(8); 
             
-            // [CORREÇÃO] Limpa sujeiras invisíveis de rede (como \r ou espaços) que impediam o uso do item
-            nomeItem.erase(nomeItem.find_last_not_of(" \n\r\t") + 1);
+            // Aqui você deve ter a sua lógica do C++ para usar o item de verdade
+            // Exemplo: personagemPrincipal->usarItem(nomeDoItem);
 
-            string textoAcao = personagemPrincipal->usarItemMochila(nomeItem);
+            // 2. AVISA O PYTHON PARA APAGAR O ITEM DA MOCHILA VISUAL
+            string msgRemover = "REMOVER_ITEM:" + nomeDoItem + "\n";
+            send(clientSocket, msgRemover.c_str(), msgRemover.length(), 0);
             
-            string pacoteMochila = 
-                "HP_JOGADOR:" + to_string(personagemPrincipal->getVida()) + "\n" +
-                "REMOVER_ITEM:" + nomeItem + "\n" +
-                "TEXTO:" + textoAcao + "\n";
-            
-            send(clientSocket, pacoteMochila.c_str(), pacoteMochila.length(), 0);
-        }
-        // [CORREÇÃO] O bloco de FUGIR que estava faltando
-        else if (comando.find("FUGIR") != string::npos) {
-            string msgFuga = "BATALHA_FIM:FUGA\n";
-            send(clientSocket, msgFuga.c_str(), msgFuga.length(), 0);
+            // 3. Envia a mensagem para aparecer na caixa de texto do jogo
+            string msgTexto = "TEXTO:Voce usou " + nomeDoItem + "!\n";
+            send(clientSocket, msgTexto.c_str(), msgTexto.length(), 0);
+
+            // 4. Atualiza a barra de vida do jogador (caso o item seja de cura)
+            string msgHP_Jog = "HP_JOGADOR:" + to_string(personagemPrincipal->getVida()) + "\n";
+            send(clientSocket, msgHP_Jog.c_str(), msgHP_Jog.length(), 0);
         }
     }
 

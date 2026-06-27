@@ -46,7 +46,7 @@ Jogador::Jogador(string n, string c) {
     nivel = 1;
     hp = 100;
     xp = 0;
-    dano_base = 10;
+    dano_base = 50;
     armaEquipada = nullptr;
     mochila = new Mochila(5);
 }

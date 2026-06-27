@@ -599,7 +599,7 @@ class Jogo:
         self.tela.blit(texto_render, (rect.centerx - texto_render.get_width() // 2, rect.centery - texto_render.get_height() // 2))
 
     def desenhar_mochila(self):
-        largura_janela, altura_janela = 360, 220
+        largura_janela, altura_janela = 400, 250
         x = LARGURA // 2 - largura_janela // 2
         y = ALTURA // 2 - altura_janela // 2
         janela = pygame.Rect(x, y, largura_janela, altura_janela)
@@ -611,16 +611,33 @@ class Jogo:
         self.tela.blit(titulo, (janela.centerx - titulo.get_width() // 2, y + 12))
 
         mouse_pos = pygame.mouse.get_pos()
+        
+        # Lista para o Python saber o que é arma e o que é consumível
+        armas_conhecidas = ["Pistola", "Rifle", "Faca", "Taco de Beisebol"]
+
         for i, item in enumerate(self.itens_mochila):
-            item_rect = pygame.Rect(x + 20, y + 55 + i * 45, largura_janela - 40, 36)
-            cor = AZUL_HOVER if item_rect.collidepoint(mouse_pos) else CINZA_CLARO
-            pygame.draw.rect(self.tela, cor, item_rect, border_radius=6)
+            # Caixa do nome do item (agora não é clicável)
+            item_rect = pygame.Rect(x + 20, y + 55 + i * 45, largura_janela - 130, 36)
+            pygame.draw.rect(self.tela, CINZA_CLARO, item_rect, border_radius=6)
             pygame.draw.rect(self.tela, PRETO, item_rect, width=1, border_radius=6)
             texto_item = self.fonte_pequena.render(item, True, PRETO)
             self.tela.blit(texto_item, (item_rect.x + 10, item_rect.centery - 8))
 
-            if pygame.mouse.get_pressed()[0] and item_rect.collidepoint(mouse_pos):
+            # Botão de ação ao lado (este é o clicável)
+            btn_acao_rect = pygame.Rect(x + largura_janela - 100, y + 55 + i * 45, 80, 36)
+            texto_botao = "EQUIPAR" if item in armas_conhecidas else "USAR"
+            
+            cor_btn = AZUL_HOVER if btn_acao_rect.collidepoint(mouse_pos) else (150, 110, 30)
+            pygame.draw.rect(self.tela, cor_btn, btn_acao_rect, border_radius=6)
+            pygame.draw.rect(self.tela, PRETO, btn_acao_rect, width=2, border_radius=6)
+            
+            texto_acao = self.fonte_pequena.render(texto_botao, True, BRANCO)
+            self.tela.blit(texto_acao, (btn_acao_rect.centerx - texto_acao.get_width() // 2, btn_acao_rect.centery - 8))
+
+            # Se clicar no botão "EQUIPAR/USAR"
+            if pygame.mouse.get_pressed()[0] and btn_acao_rect.collidepoint(mouse_pos):
                 self.acao_usar_item(item)
+                pygame.time.delay(200) # Pequeno delay para evitar duplo-clique acidental
 
         dica = self.fonte_pequena.render("ESC ou clique fora para fechar", True, (90, 90, 90))
         self.tela.blit(dica, (janela.centerx - dica.get_width() // 2, y + altura_janela - 26))
