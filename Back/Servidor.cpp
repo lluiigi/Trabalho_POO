@@ -97,25 +97,30 @@ int main() {
                 send(clientSocket, "BATALHA_FIM:DERROTA\n", 20, 0);
             } 
             else {
-                send(clientSocket, "TEXTO:Turno encerrado! O zumbi contra-atacou.\n", 45, 0);
+                send(clientSocket, "TEXTO:Turno encerrado! O zumbi contra-atacou.\n", 46, 0);
             }
         }
-        else if (comando.find("MOCHILA:") != string::npos) {
-            // 1. Pega o nome do item que veio do Python (ex: "Enlatado")
+       else if (comando.find("MOCHILA:") != string::npos) {
             string nomeDoItem = comando.substr(8); 
-            
-            // Aqui você deve ter a sua lógica do C++ para usar o item de verdade
-            // Exemplo: personagemPrincipal->usarItem(nomeDoItem);
 
-            // 2. AVISA O PYTHON PARA APAGAR O ITEM DA MOCHILA VISUAL
+            // ==============================================================
+            // 1. CHAMA O SEU MÉTODO ORIENTADO A OBJETOS
+            // ==============================================================
+            // A sua função usarItemMochila já faz toda a mágica (cura, equipa arma)
+            // e já devolve a string pronta (ex: "TEXTO:Voce consumiu Enlatado...\n")
+            string msgTexto = personagemPrincipal->usarItemMochila(nomeDoItem);
+
+            // ==============================================================
+            // 2. AVISA O PYTHON DAS MUDANÇAS
+            // ==============================================================
+            // A) Remove o item da mochila gráfica
             string msgRemover = "REMOVER_ITEM:" + nomeDoItem + "\n";
             send(clientSocket, msgRemover.c_str(), msgRemover.length(), 0);
             
-            // 3. Envia a mensagem para aparecer na caixa de texto do jogo
-            string msgTexto = "TEXTO:Voce usou " + nomeDoItem + "!\n";
+            // B) Envia o texto de feedback retornado pela sua função para destravar a tela
             send(clientSocket, msgTexto.c_str(), msgTexto.length(), 0);
 
-            // 4. Atualiza a barra de vida do jogador (caso o item seja de cura)
+            // C) Força a barra de vida verde do Python a atualizar
             string msgHP_Jog = "HP_JOGADOR:" + to_string(personagemPrincipal->getVida()) + "\n";
             send(clientSocket, msgHP_Jog.c_str(), msgHP_Jog.length(), 0);
         }
